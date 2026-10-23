@@ -1,0 +1,60 @@
+// Complaint Management System schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Complaint {
+  id             String   @id @default(cuid())
+  ticketId       String   @unique
+  title          String
+  description    String
+  category       String   // electrical | plumbing | it | civil | sanitation | security
+  department     String   // derived service department name
+  priority       String   @default("medium") // low | medium | high | urgent
+  status         String   @default("pending") // pending | approved | in_progress | resolved | rejected
+  location       String   @default("")
+  reporterName   String
+  reporterContact String
+  assignedTo     String?
+  resolutionNote String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  activities     ActivityLog[]
+
+  @@index([category])
+  @@index([status])
+  @@index([department])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  complaintId String
+  action      String   // created | approved | rejected | started | resolved | reopened | note
+  by          String
+  note        String?
+  timestamp   DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+}
+
+model Account {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("citizen") // citizen | service | admin
+  department   String?  // category key for service role (electrical, plumbing, ...)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+}
